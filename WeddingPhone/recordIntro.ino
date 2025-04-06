@@ -19,16 +19,14 @@
 
 // GUItool: begin automatically generated code
 AudioInputI2S            i2s2;           //xy=105,63
+AudioAnalyzePeak         peak1;          //xy=278,108
 AudioRecordQueue         queue1;         //xy=281,63
 AudioPlaySdRaw           playRaw1;       //xy=302,157
 AudioOutputI2S           i2s1;           //xy=470,120
-AudioSynthWaveformSine   waveform1;
-AudioMixer4              mixer1;         //xy=891,459
 AudioConnection          patchCord1(i2s2, 0, queue1, 0);
-AudioConnection          patchCord3(playRaw1, 0, mixer1, 0);
-AudioConnection          patchCord4(waveform1, 0, mixer1, 1);
-AudioConnection          patchCord5(mixer1, 0, i2s1, 0);
-AudioConnection          patchCord6(mixer1, 0, i2s1, 1);
+AudioConnection          patchCord2(i2s2, 0, peak1, 0);
+AudioConnection          patchCord3(playRaw1, 0, i2s1, 0);
+AudioConnection          patchCord4(playRaw1, 0, i2s1, 1);
 AudioControlSGTL5000     sgtl5000_1;     //xy=265,212
 // GUItool: end automatically generated code
 
@@ -85,12 +83,6 @@ void setup() {
   sgtl5000_1.volume(70);
   sgtl5000_1.micGain(30);
 
-  mixer1.gain(0, 1.0);
-  mixer1.gain(1, 0);
-
-  waveform1.amplitude(1);
-  waveform1.frequency(440);
-
   // Initialize the SD card
   SPI.setMOSI(SDCARD_MOSI_PIN);
   SPI.setSCK(SDCARD_SCK_PIN);
@@ -109,31 +101,21 @@ void loop() {
   button.update();
   //Step 0 - In order to do anything the receiver needs to be picked up
   if (button.pressed()) {
-    stopPlayingIntro();
-    stopRecording();
-    startPlayingIntro();
   }
 
   if (button.isPressed()) {
-    if (mode == playbackActive) {
-      continuePlayingIntro();
-    }
     if (mode == notRecording) {
       startRecording();
     }
   }
 
   if (button.released()) {
-    stopPlayingIntro();
     stopRecording();
   }
 
   // If we're playing or recording, carry on...
   if (mode == currentlyRecording) {
     continueRecording();
-  }
-  if (mode == playbackActive) {
-    continuePlayingIntro();
   }
 
   // when using a microphone, continuously adjust gain
@@ -145,21 +127,13 @@ void startRecording() {
   Serial.println("startRecordingCalled");
   if (mode == notRecording) {
     Serial.println("startRecordingStarted");
-    char filename[10];
-    filenameCounter++;
-    if (filenameCounter > 999999999) {
-      filenameCounter = 1;
-    }
-    ltoa(filenameCounter, filename, 10);
-    while (SD.exists(filename)) {
+    if (SD.exists("INTRO.RAW")) {
       // The SD library writes new data to the end of the
       // file, so to start a new recording, the old file
       // must be deleted before new data is written.
-      Serial.println("The file name generated exists!");
-      filenameCounter++;
-      ltoa(filenameCounter, filename, 10);
+      SD.remove("INTRO.RAW");
     }
-    frec = SD.open(filename, FILE_WRITE);
+    frec = SD.open("INTRO.RAW", FILE_WRITE);
     if (frec) {
       queue1.begin();
       mode = currentlyRecording;
@@ -213,40 +187,10 @@ void stopRecording() {
 }
 
 
-void startPlayingIntro() {
-  Serial.println("startPlayingCalled");
-  if (mode == notRecording) {
-    Serial.println("startPlayingStarted");
-    playRaw1.play("INTRO.RAW");
-    mode = playbackActive;
-  }
-}
-
-void continuePlayingIntro() {
-  if (mode == playbackActive) {
-    if (!playRaw1.isPlaying()) {
-      playRaw1.stop();
-      waveform1.frequency(900);
-      mixer1.gain(1, 1.0);
-      delay(1000);
-      mixer1.gain(1, 0);
-      mode = notRecording;
-    }
-  }
-}
-
-void stopPlayingIntro() {
-  Serial.println("stopPlaying");
-  if (mode == playbackActive) {
-    Serial.println("stopPlayingStopped");
-    playRaw1.stop();
-    mode = notRecording;
-  }
-}
-
 void adjustMicLevel() {
   // TODO: read the peak1 object and adjust sgtl5000_1.micGain()
   // if anyone gets this working, please submit a github pull request :-)
 }
+
 
 
