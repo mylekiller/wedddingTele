@@ -45,6 +45,7 @@ enum recordingState {
   notRecording,
   currentlyRecording,
   playbackActive,
+  serialControl,
 };
 
 // Bounce objects to easily and reliably read the buttons
@@ -126,6 +127,7 @@ void loop() {
   if (button.released()) {
     stopPlayingIntro();
     stopRecording();
+    giveUpSerialControl();
   }
 
   // If we're playing or recording, carry on...
@@ -135,8 +137,25 @@ void loop() {
   if (mode == playbackActive) {
     continuePlayingIntro();
   }
+  if (mode == serialControl) {
+    continuePlayingFile();
+  }
 
-  // when using a microphone, continuously adjust gain
+  if (Serial.available() > 0) {
+    String cmd = Serial.readStringUntil('\n');
+    if (button.isPressed()) {
+      if (cmd == "PLAY") {
+        stopPlayingIntro();
+        stopRecording();
+        mode = serialControl;
+        Serial.println("Enter the filename you'd like to play");
+        while (Serial.available() == 0) {}
+        String file = Serial.readStringUntil('\n');
+        startPlayingFile(file);
+      }
+    }
+  }
+   // when using a microphone, continuously adjust gain
   if (myInput == AUDIO_INPUT_MIC) adjustMicLevel();
 }
 
@@ -222,6 +241,14 @@ void startPlayingIntro() {
   }
 }
 
+void startPlayingFile(String fileToPlay) {
+  Serial.println("startPlayingFileCalled");
+  if (mode == serialControl) {
+    Serial.println("startPlayingFileStart");
+    playRaw1.play(fileToPlay.c_str());
+  }
+}
+
 void continuePlayingIntro() {
   if (mode == playbackActive) {
     if (!playRaw1.isPlaying()) {
@@ -235,11 +262,25 @@ void continuePlayingIntro() {
   }
 }
 
+void continuePlayingFile() {
+  if (mode == serialControl) {
+    if (!playRaw1.isPlaying()) {
+      playRaw1.stop();
+    }
+  }
+}
+
 void stopPlayingIntro() {
   Serial.println("stopPlaying");
   if (mode == playbackActive) {
     Serial.println("stopPlayingStopped");
     playRaw1.stop();
+    mode = notRecording;
+  }
+}
+
+void giveUpSerialControl() {
+  if (mode == serialControl) {
     mode = notRecording;
   }
 }
