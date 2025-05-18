@@ -83,10 +83,10 @@ void setup() {
   // Enable the audio shield, select input, and enable output
   sgtl5000_1.enable();
   sgtl5000_1.inputSelect(myInput);
-  sgtl5000_1.volume(70);
-  sgtl5000_1.micGain(30);
+  sgtl5000_1.volume(0.8);
+  sgtl5000_1.micGain(20);
 
-  mixer1.gain(0, 1.0);
+  mixer1.gain(0, 60.0);
   mixer1.gain(1, 0);
 
   waveform1.amplitude(1);

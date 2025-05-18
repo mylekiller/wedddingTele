@@ -81,7 +81,7 @@ void setup() {
   sgtl5000_1.enable();
   sgtl5000_1.inputSelect(myInput);
   sgtl5000_1.volume(70);
-  sgtl5000_1.micGain(30);
+  sgtl5000_1.micGain(20);
 
   // Initialize the SD card
   SPI.setMOSI(SDCARD_MOSI_PIN);
